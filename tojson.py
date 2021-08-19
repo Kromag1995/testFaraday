@@ -16,18 +16,6 @@ def vuln_to_dic(vuln: etree.Element) ->dict:
         vuln_dict[atrr.tag] = atrr.text
     return vuln_dict
 
-def vuln_count(vulns: list) -> tuple:
-    vulns_ids = []
-    web_vulns = 0
-    no_web_vulns = 0
-    for vuln in vulns:
-        if not vuln["id"] in vulns_ids:
-            if "web-site-id" in vuln:
-                web_vulns += 1
-            else:
-                no_web_vulns += 1
-    return web_vulns, no_web_vulns
-
 
 def xml_to_json(input: str) -> dict:
     tree = etree.parse(input)
@@ -36,6 +24,8 @@ def xml_to_json(input: str) -> dict:
     services = [root.find('services')[0].find("id").text]
     vulns = []
     web_sites = []
+    web_vulns = []
+    no_web_vulns = []
     for i in root.findall('hosts'):
         hosts += i.findall('host')
     for host in hosts:
@@ -44,17 +34,21 @@ def xml_to_json(input: str) -> dict:
                 services.append(service.find("id").text)
     
         for vuln in host.find('vulns').findall("vuln"):
-            vulns.append(vuln_to_dic(vuln))
-            if not (vuln.find('web-site-id') is None) and not (vuln.find('web-site-id').text in web_sites):
-                web_sites.append(vuln.find('web-site-id').text)
-    w_vulns_count,vulns_count = vuln_count(vulns)
-    
+            vulns.append(vuln_to_dic(vuln)) 
+            if not (vuln.find('web-site-id') is None):
+                if not (vuln.find('id').text in web_vulns):
+                    web_vulns.append(vuln.find('id').text)
+                if not (vuln.find('web-site-id').text in web_sites):
+                    web_sites.append(vuln.find('web-site-id').text)
+            elif not (vuln.find('id').text in no_web_vulns):
+                no_web_vulns.append(vuln.find('id').text)
+
     js = {
         "hosts_count": len(hosts),
         "services_count": len(services),
         "website_count": len(web_sites),
-        "web_vulns_count": w_vulns_count,
-        "vulns_count":vulns_count,
+        "web_vulns_count": len(web_vulns),
+        "vulns_count":len(no_web_vulns),
         "vulns":vulns
     }
 
