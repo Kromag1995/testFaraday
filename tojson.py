@@ -21,36 +21,35 @@ def xml_to_json(input: str) -> dict:
     tree = etree.parse(input)
     root = tree.getroot()
     hosts = []
-    services = [root.find('services')[0].find("id").text]
+    services = 1
     vulns = []
     web_sites = []
-    web_vulns = []
-    no_web_vulns = []
+    web_vulns_count = 0
     for i in root.findall('hosts'):
         hosts += i.findall('host')
     for host in hosts:
         for service in host.find('services').findall("service"):
-            if not (service.find("id").text in services):
-                services.append(service.find("id").text)
-    
-        for vuln in host.find('vulns').findall("vuln"):
-            vulns.append(vuln_to_dic(vuln)) 
-            if not (vuln.find('web-site-id') is None):
-                if not (vuln.find('id').text in web_vulns):
-                    web_vulns.append(vuln.find('id').text)
-                if not (vuln.find('web-site-id').text in web_sites):
-                    web_sites.append(vuln.find('web-site-id').text)
-            elif not (vuln.find('id').text in no_web_vulns):
-                no_web_vulns.append(vuln.find('id').text)
+            services += 1
 
+        for vuln in host.find('vulns').findall("vuln"):
+            vulns.append(vuln_to_dic(vuln))
+            if not (vuln.find('web-site-id') is None):
+                web_vulns_count += 1
+                if not (vuln.find('web-site-id').text in web_sites):
+                    web_sites.append(vuln)
     js = {
         "hosts_count": len(hosts),
-        "services_count": len(services),
+        "services_count": services,
         "website_count": len(web_sites),
-        "web_vulns_count": len(web_vulns),
-        "vulns_count":len(no_web_vulns),
-        "vulns":vulns
+        "web_vulns_count": web_vulns_count,
+        "vulns_count":len(vulns)-web_vulns_count,
+        "vulns": vulns
     }
+    print("hosts_count", len(hosts),
+        "services_count", services,
+        "website_count", len(web_sites),
+        "web_vulns_count", web_vulns_count,
+        "vulns_count",len(vulns)-web_vulns_count)
 
     return js
 
